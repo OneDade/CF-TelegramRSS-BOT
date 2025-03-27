@@ -1,0 +1,34 @@
+{
+  "name": "rssbot-cf-worker",
+  "version": "1.0.0",
+  "description": "Telegram RSS Bot for Cloudflare Workers",
+  "type": "module",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "wrangler dev",
+    "deploy": "tsc && wrangler deploy",
+    "format": "prettier --write 'src/**/*.{js,ts}'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "telegram",
+    "rss",
+    "bot",
+    "cloudflare",
+    "workers"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "rss-parser": "^3.13.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250321.0",
+    "@types/node": "^20.12.7",
+    "@types/xml2js": "^0.4.14",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.2",
+    "wrangler": "^3.30.1"
+  }
+}

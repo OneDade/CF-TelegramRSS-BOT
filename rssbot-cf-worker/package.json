@@ -1,0 +1,22 @@
+{
+  "name": "rssbot-cf-worker",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "rss-parser": "^3.13.0",
+    "wrangler": "^4.5.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250321.0",
+    "@types/node": "^22.13.14",
+    "prettier": "^3.5.3",
+    "typescript": "^5.8.2"
+  }
+}
