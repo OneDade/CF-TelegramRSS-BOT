@@ -70,4 +70,7 @@ npm run dev
 
 ## 致谢
 
-本项目受到[iovxw/rssbot](https://github.com/iovxw/rssbot)的启发。 
+本项目受到以下开源项目的启发：
+
+- [iovxw/rssbot](https://github.com/iovxw/rssbot)
+- [lxl66566/Telegram-RSS-Bot-on-Cloudflare-Workers](https://github.com/lxl66566/Telegram-RSS-Bot-on-Cloudflare-Workers) - 一个基于 Cloudflare Workers 和 D1 数据库构建的 Telegram RSS 机器人，无需服务器，免费且稳定。 
