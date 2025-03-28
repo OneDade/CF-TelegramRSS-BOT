@@ -172,41 +172,4 @@ export class TelegramService {
   isAdmin(userId: number | string, adminId: string): boolean {
     return String(userId) === adminId;
   }
-
-  /**
-   * 检查用户是否为群组管理员
-   */
-  async isGroupAdmin(chatId: string | number, userId: string | number): Promise<boolean> {
-    try {
-      const result = await this.sendRequest<any>('getChatMember', {
-        chat_id: chatId,
-        user_id: userId
-      });
-
-      if (!result.ok || !result.result) {
-        return false;
-      }
-
-      const status = result.result.status;
-      return status === 'creator' || status === 'administrator';
-    } catch (error) {
-      console.error('检查群组管理员权限失败:', error);
-      return false;
-    }
-  }
-
-  /**
-   * 获取机器人信息
-   */
-  async getMe(): Promise<TelegramResponse> {
-    try {
-      return await this.sendRequest<TelegramResponse>('getMe', {});
-    } catch (error: any) {
-      console.error('获取机器人信息失败:', error);
-      return {
-        ok: false,
-        description: error.message || '获取机器人信息失败'
-      };
-    }
-  }
 } 
