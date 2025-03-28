@@ -19,10 +19,15 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // 初始化服务
+    const telegramService = new TelegramService(env.TELEGRAM_BOT_TOKEN);
+
     // 路由
     if (path === '/webhook' && request.method === 'POST') {
       return handleWebhook(request, env);
     } else if (path === '/setup' && request.method === 'GET') {
+      // 设置webhook时同时设置命令菜单
+      await telegramService.setCommands();
       return handleSetupWebhook(request, env);
     } else if (path === '/health' && request.method === 'GET') {
       return handleHealthCheck(request, env);

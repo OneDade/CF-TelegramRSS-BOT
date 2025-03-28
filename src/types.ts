@@ -31,29 +31,30 @@ export interface TelegramUpdate {
 
 export interface TelegramResponse {
   ok: boolean;
-  result?: any;
   description?: string;
+  result?: any;
 }
 
 /**
  * RSS相关类型定义
  */
 export interface RSSItem {
-  guid?: string;
   title?: string;
   link?: string;
+  description?: string;
   content?: string;
   contentSnippet?: string;
   pubDate?: string;
+  guid?: string;
   creator?: string;
   author?: string;
 }
 
 export interface RSSFeed {
-  title: string;
+  title?: string;
   description?: string;
   link?: string;
-  items: RSSItem[];
+  items?: RSSItem[];
 }
 
 export interface RSSParseResult {
@@ -67,7 +68,7 @@ export interface RSSParseResult {
  */
 export interface Subscription {
   url: string;
-  title: string;
+  title?: string;
   addedAt: number;
   lastFetched: number;
 }

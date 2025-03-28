@@ -9,7 +9,8 @@ const COMMANDS = {
   SUB: '/sub',
   UNSUB: '/unsub',
   RSS: '/rss',
-  EXPORT: '/export'
+  EXPORT: '/export',
+  MENU: '/menu'
 };
 
 // 帮助文本
@@ -19,7 +20,12 @@ const HELP_TEXT = `
 /sub - 订阅一个RSS: /sub http://example.com/feed.xml
 /unsub - 退订一个RSS: /unsub http://example.com/feed.xml
 /export - 导出为OPML格式
+/menu - 显示命令菜单
 /help - 显示帮助信息
+
+在群组中使用时，请确保:
+1. 将机器人设为群组管理员
+2. 使用 @机器人用户名 或直接使用命令
 `;
 
 /**
@@ -51,7 +57,7 @@ export class CommandHandler {
    * @param message Telegram消息
    */
   async handleCommand(message: TelegramMessage): Promise<void> {
-    const chatId = message.chat.id.toString(); // 将数字转换为字符串
+    const chatId = message.chat.id.toString();
     const userId = message.from.id.toString();
     const text = message.text || '';
     const chatType = message.chat.type;
@@ -59,26 +65,37 @@ export class CommandHandler {
 
     console.log(`处理消息: ${text} 从用户: ${userId} 在聊天: ${chatId}, 类型: ${chatType}`);
     
-    // 检查是否是群组消息，且没有直接提及机器人
+    // 提取纯命令（去除@机器人名称部分）
+    let cleanCommand = text;
+    if (text.includes('@')) {
+      const parts = text.split('@');
+      if (parts.length > 1) {
+        const commandPart = parts[0];
+        const botPart = parts[1].split(' ')[0];
+        if (botPart === botName.substring(1)) { // 去除@符号比较
+          cleanCommand = commandPart + (parts[1].includes(' ') ? parts[1].substring(parts[1].indexOf(' ')) : '');
+        }
+      }
+    }
+
+    // 检查是否是群组消息
     const isGroupChat = chatType === 'group' || chatType === 'supergroup';
     if (isGroupChat) {
       // 在群组中，只响应明确提及机器人名称的命令或直接的命令
       const isBotCommand = text.startsWith('/') && (
-        // 以命令开头且命令后跟着机器人名称，如 "/start@mybot"
-        text.includes(`@${botName}`) ||
-        // 或者是一个纯命令，没有@符号
+        text.includes(`@${botName.substring(1)}`) ||
         !text.includes('@')
       );
 
       if (!isBotCommand) {
         console.log('忽略群组中非命令消息');
-        return; // 忽略群组中的非命令消息
+        return;
       }
     }
     
     try {
-      // 始终回应 /start 命令
-      if (text.startsWith(COMMANDS.START) || text.startsWith(COMMANDS.HELP)) {
+      // 始终回应 /start 和 /help 命令
+      if (cleanCommand.startsWith(COMMANDS.START) || cleanCommand.startsWith(COMMANDS.HELP)) {
         console.log('发送帮助信息');
         await this.telegramService.sendMessage(chatId, HELP_TEXT);
         return;
@@ -87,40 +104,42 @@ export class CommandHandler {
       // 检查管理员权限
       const isAdmin = this.telegramService.isAdmin(userId, this.adminId);
       
+      // 在群组中，允许群组管理员使用命令
+      let canUseCommands = isAdmin;
+      if (isGroupChat) {
+        const isGroupAdmin = await this.telegramService.isGroupAdmin(chatId, userId);
+        canUseCommands = canUseCommands || isGroupAdmin;
+      }
+
       // 处理其他命令
-      if (text.startsWith(COMMANDS.SUB)) {
-        if (!isAdmin) {
+      if (cleanCommand.startsWith(COMMANDS.SUB)) {
+        if (!canUseCommands) {
           await this.telegramService.sendMessage(chatId, '抱歉，只有管理员可以使用此命令');
           return;
         }
-        
-        await this.handleSubscribe(chatId, userId, text);
+        await this.handleSubscribe(chatId, userId, cleanCommand);
       } 
-      else if (text.startsWith(COMMANDS.UNSUB)) {
-        if (!isAdmin) {
+      else if (cleanCommand.startsWith(COMMANDS.UNSUB)) {
+        if (!canUseCommands) {
           await this.telegramService.sendMessage(chatId, '抱歉，只有管理员可以使用此命令');
           return;
         }
-        
-        await this.handleUnsubscribe(chatId, userId, text);
+        await this.handleUnsubscribe(chatId, userId, cleanCommand);
       } 
-      else if (text.startsWith(COMMANDS.RSS)) {
-        if (!isAdmin) {
-          await this.telegramService.sendMessage(chatId, '抱歉，只有管理员可以使用此命令');
-          return;
-        }
-        
+      else if (cleanCommand.startsWith(COMMANDS.RSS)) {
         await this.handleListSubscriptions(chatId, userId);
       } 
-      else if (text.startsWith(COMMANDS.EXPORT)) {
-        if (!isAdmin) {
+      else if (cleanCommand.startsWith(COMMANDS.EXPORT)) {
+        if (!canUseCommands) {
           await this.telegramService.sendMessage(chatId, '抱歉，只有管理员可以使用此命令');
           return;
         }
-        
         await this.handleExport(chatId, userId);
-      } else if (text.startsWith('/')) {
-        // 对于其他以斜杠开头的未知命令，发送帮助信息
+      }
+      else if (cleanCommand.startsWith(COMMANDS.MENU)) {
+        await this.telegramService.sendMenu(chatId);
+      }
+      else if (cleanCommand.startsWith('/')) {
         await this.telegramService.sendMessage(chatId, `未知命令。${HELP_TEXT}`);
       }
     } catch (error: any) {
@@ -143,7 +162,7 @@ export class CommandHandler {
       return;
     }
     
-    const result = await this.subscriptionService.subscribeFeed(userId, feedUrl);
+    const result = await this.subscriptionService.subscribeFeed(chatId, feedUrl);
     await this.telegramService.sendMessage(chatId, result.message);
   }
 
@@ -160,7 +179,7 @@ export class CommandHandler {
       return;
     }
     
-    const result = await this.subscriptionService.unsubscribeFeed(userId, feedUrl);
+    const result = await this.subscriptionService.unsubscribeFeed(chatId, feedUrl);
     await this.telegramService.sendMessage(chatId, result.message);
   }
 
@@ -170,7 +189,7 @@ export class CommandHandler {
    * @param userId 用户ID
    */
   private async handleListSubscriptions(chatId: string, userId: string): Promise<void> {
-    const result = await this.subscriptionService.listSubscriptions(userId);
+    const result = await this.subscriptionService.listSubscriptions(chatId);
     await this.telegramService.sendMessage(chatId, result.message);
   }
 
@@ -180,7 +199,7 @@ export class CommandHandler {
    * @param userId 用户ID
    */
   private async handleExport(chatId: string, userId: string): Promise<void> {
-    const result = await this.subscriptionService.exportToOPML(userId);
+    const result = await this.subscriptionService.exportToOPML(chatId);
     if (result.success && result.opml) {
       await this.telegramService.sendMessage(chatId, result.message);
       await this.telegramService.sendMessage(chatId, `<pre>${result.opml}</pre>`);
